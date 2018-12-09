@@ -12,9 +12,8 @@ class ConvText(object):
     def __init__(self, seq_length, num_labels, init_embedding_weights):
         
         self.num_labels = num_labels
-        self.dropout = 0.2
+        self.dropout = 0.5
         self.lr = 0.001
-        self.is_training = False
         self.thres = 0.5
 
         tf.reset_default_graph()
@@ -37,7 +36,7 @@ class ConvText(object):
         # Input placeholders
         self.input_seq = tf.placeholder(tf.int32, (None, seq_length))
         self.target_tags = tf.placeholder(tf.float64, (None, self.num_labels))
-
+        self.is_training = tf.placeholder(tf.bool, (1))
 
         # Embedding layer
         E = tf.get_variable('E', 
@@ -77,12 +76,18 @@ class ConvText(object):
         
         # Dense layer 4
         flatten_4 = tf.layers.flatten(inputs=conv_3)
-        dense_4 = tf.layers.dense(inputs=flatten_4,
+        dropout_4 = tf.layers.dropout(inputs=flatten_4,
+                                    rate=self.dropout,
+                                    training=self.is_training)
+        dense_4 = tf.layers.dense(inputs=dropout_4,
                                 units=250,
                                 activation=tf.nn.relu)
         
         # Dense layer 5
-        logits = tf.layers.dense(dense_4,
+        dropout_5 = tf.layers.dropout(inputs=dense_4,
+                                    rate=self.dropout,
+                                    training=self.is_training)
+        logits = tf.layers.dense(dropout_5,
                                 units=self.num_labels)
 
         # Pass logits through sigmoid to get probability of each tag
@@ -104,7 +109,6 @@ class ConvText(object):
         Evaluate a model
         '''
         total_loss, predicted_tags = 0, np.zeros(y.shape)
-        self.is_training = False
         
         for i in range(x.shape[0]//batch_size):
 
@@ -115,7 +119,8 @@ class ConvText(object):
                                             self.predicted_tags], 
                                         feed_dict={
                                             self.input_seq:x_batch,
-                                            self.target_tags:y_batch})
+                                            self.target_tags:y_batch,
+                                            self.is_training:False})
 
             total_loss += l
             predicted_tags[i*batch_size:(i+1)*batch_size,:] = np.asarray(
@@ -189,7 +194,8 @@ class ConvText(object):
                                                     self.predicted_tags], 
                                                 feed_dict={
                                                     self.input_seq:x_batch,
-                                                    self.target_tags:y_batch})
+                                                    self.target_tags:y_batch,
+                                                    self.is_training:True})
 
                 progbar.add(x_batch.shape[0], values=[("Loss", l)])
                 total_loss += l
@@ -230,7 +236,8 @@ class ConvText(object):
 
             x_batch = x[i*batch_size:(i+1)*batch_size,:,:,:]    
             predicted_tags = self.sess.run([self.predicted_tags], 
-                                feed_dict={self.input_seq:x_batch})
+                                feed_dict={self.input_seq:x_batch,
+                                            self.is_training:False})
 
             y[i*batch_size:(i+1)*batch_size,:] = np.asarray(
                                                 predicted_tags[0]>self.thres,
