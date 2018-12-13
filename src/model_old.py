@@ -12,9 +12,10 @@ class ConvText(object):
     def __init__(self, seq_length, num_labels, init_embedding_weights):
         
         self.num_labels = num_labels
+        self.dropout = 0.2
         self.lr = 0.001
+        self.is_training = False
         self.thres = 0.5
-        self.dropout = 0.5
 
         tf.reset_default_graph()
         self.build(seq_length, init_embedding_weights)
@@ -36,10 +37,10 @@ class ConvText(object):
         # Input placeholders
         self.input_seq = tf.placeholder(tf.int32, (None, seq_length))
         self.target_tags = tf.placeholder(tf.float64, (None, self.num_labels))
-        self.keep_prob = tf.placeholder(tf.float64, shape=())
+
 
         # Embedding layer
-        E = tf.get_variable('E',
+        E = tf.get_variable('E', 
                             initializer=tf.constant(init_embedding_weights),
                             trainable=True)
 
@@ -52,7 +53,7 @@ class ConvText(object):
         filter_sizes = [3,4,5]
         for filter_size in filter_sizes:
             conv_1 = tf.layers.conv1d(inputs=embedded_seq,
-                                    filters=32,
+                                    filters=128,
                                     kernel_size=filter_size,
                                     strides=1,
                                     activation=tf.nn.relu)
@@ -62,30 +63,26 @@ class ConvText(object):
 
         # Convolutional Layer 2
         conv_2 = tf.layers.conv1d(inputs=merge_1,
-                                filters=32,
+                                filters=64,
                                 kernel_size=5,
                                 strides=2,
                                 activation=tf.nn.relu)
 
-        # # Convolutional Layer 3
-        # conv_3 = tf.layers.conv1d(inputs=conv_2,
-        #                         filters=16,
-        #                         kernel_size=5,
-        #                         strides=2,
-        #                         activation=tf.nn.relu)
+        # Convolutional Layer 3
+        conv_3 = tf.layers.conv1d(inputs=conv_2,
+                                filters=16,
+                                kernel_size=5,
+                                strides=2,
+                                activation=tf.nn.relu)
         
         # Dense layer 4
-        flatten_4 = tf.layers.flatten(inputs=conv_2)
-        dropout_4 = tf.nn.dropout(x=flatten_4,
-                                keep_prob=self.keep_prob)
-        dense_4 = tf.layers.dense(inputs=dropout_4,
+        flatten_4 = tf.layers.flatten(inputs=conv_3)
+        dense_4 = tf.layers.dense(inputs=flatten_4,
                                 units=250,
                                 activation=tf.nn.relu)
         
         # Dense layer 5
-        dropout_5 = tf.nn.dropout(x=dense_4,
-                                keep_prob=self.keep_prob)
-        logits = tf.layers.dense(dropout_5,
+        logits = tf.layers.dense(dense_4,
                                 units=self.num_labels)
 
         # Pass logits through sigmoid to get probability of each tag
@@ -107,6 +104,7 @@ class ConvText(object):
         Evaluate a model
         '''
         total_loss, predicted_tags = 0, np.zeros(y.shape)
+        self.is_training = False
         
         for i in range(x.shape[0]//batch_size):
 
@@ -117,8 +115,7 @@ class ConvText(object):
                                             self.predicted_tags], 
                                         feed_dict={
                                             self.input_seq:x_batch,
-                                            self.target_tags:y_batch,
-                                            self.keep_prob:1})
+                                            self.target_tags:y_batch})
 
             total_loss += l
             predicted_tags[i*batch_size:(i+1)*batch_size,:] = np.asarray(
@@ -192,8 +189,7 @@ class ConvText(object):
                                                     self.predicted_tags], 
                                                 feed_dict={
                                                     self.input_seq:x_batch,
-                                                    self.target_tags:y_batch,
-                                                    self.keep_prob:self.dropout})
+                                                    self.target_tags:y_batch})
 
                 progbar.add(x_batch.shape[0], values=[("Loss", l)])
                 total_loss += l
@@ -234,11 +230,10 @@ class ConvText(object):
 
             x_batch = x[i*batch_size:(i+1)*batch_size,:,:,:]    
             predicted_tags = self.sess.run([self.predicted_tags], 
-                                feed_dict={self.input_seq:x_batch,
-                                            self.keep_prob:1})
+                                feed_dict={self.input_seq:x_batch})
 
             y[i*batch_size:(i+1)*batch_size,:] = np.asarray(
-                                                predicted_tags[0],
+                                                predicted_tags[0]>self.thres,
                                                 dtype=np.int32)
     
         return y
