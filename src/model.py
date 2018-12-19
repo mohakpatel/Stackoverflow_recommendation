@@ -40,7 +40,7 @@ class ConvText(object):
         self.keep_prob = tf.placeholder(tf.float64, shape=())
 
         # L2 regularization
-        regularizer = tf.contrib.layers.l2_regularizer(scale=0.00005)
+        regularizer = tf.contrib.layers.l2_regularizer(scale=0.00001)
 
         # Embedding layer
         E = tf.get_variable('E',
