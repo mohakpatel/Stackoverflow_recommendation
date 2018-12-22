@@ -15,6 +15,7 @@ Recommended tags: 'c#', 'c++'
 
 I develop a deep leanring based convolutional multi-label sentence classificaiton model to recommend tags for the StackOverflow questions. 
 
+![Convolutional multi-label sentence classificaiton model](https://raw.githubusercontent.com/mohakpatel/Stackoverflow_recommendation/master/src/model.png?token=ALukoW5Y89T6C8dUDPJOsMolh-pzKG1-ks5cJulrwA%3D%3D)
 
 ## Files
 
