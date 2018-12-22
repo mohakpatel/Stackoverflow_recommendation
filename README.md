@@ -20,7 +20,7 @@ I use a deep leanring based convolutional multi-label sentence classificaiton mo
 ## Files
 
 * [Tag_recommendation_NLP_model.ipynb](https://github.com/mohakpatel/Stackoverflow_recommendation/blob/master/src/Tag_recommendation_NLP_model.ipynb): Data preprocessing, cleaning, model training and test results. 
-* [model.py](https://github.com/mohakpatel/ImageCleaning/blob/master/src/model.py): Deep learning based convolutional multi-label sentence classification model implemented in Tensorflow. 
+* [model.py](https://github.com/mohakpatel/Stackoverflow_recommendation/blob/master/src/model.py): Deep learning based convolutional multi-label sentence classification model implemented in Tensorflow. 
 
 
 ## Requirements
